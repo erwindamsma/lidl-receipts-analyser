@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kassabon-dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper:#f4f4f1; --surface:#fcfcfb; --raised:#ffffff;
+  --ink:#16160f; --ink-2:#52514e; --ink-3:#86847c;
+  --rule:#e1e0d9; --axis:#c3c2b7;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  --soft:#cde2fb; --heat0:#f0efec; --heat1:#cde2fb; --heat2:#86b6ef;
+  --heat3:#3987e5; --heat4:#256abf; --heat5:#104281;
+  --up:#e34948; --down:#2a78d6; --good:#006300;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0d0d0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f7f7f2; --ink-2:#c3c2b7; --ink-3:#8f8d85;
+  --rule:#2c2c2a; --axis:#383835;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+  --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --soft:#184f95; --heat0:#232322; --heat1:#184f95; --heat2:#1c5cab;
+  --heat3:#2a78d6; --heat4:#5598e7; --heat5:#9ec5f4;
+  --up:#e66767; --down:#3987e5; --good:#0ca30c;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0d0d0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#f7f7f2; --ink-2:#c3c2b7; --ink-3:#8f8d85;
+  --rule:#2c2c2a; --axis:#383835;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+  --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --soft:#184f95; --heat0:#232322; --heat1:#184f95; --heat2:#1c5cab;
+  --heat3:#2a78d6; --heat4:#5598e7; --heat5:#9ec5f4;
+  --up:#e66767; --down:#3987e5; --good:#0ca30c;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:23px;letter-spacing:-.02em;margin:0}
+.period{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.04em}
+.spacer{flex:1 1 auto}
+
+.filters{display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:11px 13px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  margin-bottom:14px;position:sticky;top:0;z-index:6}
+.filters label{font-size:11px;color:var(--ink-3);font-family:var(--mono);
+  letter-spacing:.08em;text-transform:uppercase}
+select,input[type=search],button{font:inherit;font-size:14px;color:var(--ink);
+  background:var(--raised);border:1px solid var(--rule);border-radius:3px;padding:5px 9px}
+input[type=search]{min-width:180px}
+button{cursor:pointer}
+button:hover,select:hover{border-color:var(--axis)}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.chip{font-family:var(--mono);font-size:12px;padding:3px 8px;background:var(--soft);
+  color:var(--ink);border-radius:3px;display:inline-flex;align-items:center;gap:6px}
+.chip button{border:0;background:none;padding:0 2px;color:inherit;font-size:15px;line-height:1}
+
+nav{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--rule)}
+nav button{border:1px solid transparent;border-bottom:0;border-radius:4px 4px 0 0;
+  background:none;padding:7px 13px;color:var(--ink-2);font-size:14px;margin-bottom:-1px}
+nav button[aria-selected=true]{background:var(--surface);border-color:var(--rule);
+  color:var(--ink);font-weight:600}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin-bottom:18px}
+.kpi{background:var(--surface);padding:13px 15px 12px}
+.kpi-label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 5px}
+.kpi-value{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0}
+.kpi-note{font-size:11.5px;color:var(--ink-2);margin:3px 0 0;line-height:1.4}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.grid3{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
+@media (max-width:960px){.grid,.grid3{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:15px 15px 11px;margin-bottom:16px}
+.card h2{font-size:14.5px;margin:0 0 2px;letter-spacing:-.01em}
+.card p.hint{font-size:12px;color:var(--ink-3);margin:0 0 11px}
+.scroll{overflow-x:auto}
+svg{display:block;width:100%;height:auto;min-width:520px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.grid-line{stroke:var(--rule);stroke-width:1}
+.zero-line{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--ink-3);font-family:var(--mono);font-size:10px;text-anchor:end}
+.xlab{fill:var(--ink-2);font-family:var(--mono);font-size:10px;text-anchor:middle}
+.cap{fill:var(--ink);font-family:var(--mono);font-size:10px;font-weight:600;text-anchor:middle}
+.rlab{fill:var(--ink-2);font-size:12px;text-anchor:end}
+.rval{fill:var(--ink);font-family:var(--mono);font-size:11px}
+.bar{fill:var(--s1)}
+.bar2{fill:var(--s2)}
+.hit{fill:transparent;cursor:pointer}
+.line{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.area{fill:var(--s1);opacity:.1}
+.dot{fill:var(--s1);stroke:var(--surface);stroke-width:2}
+.catrow{cursor:pointer}
+.catrow.on .bar{fill:var(--s2)}
+.cell{stroke:var(--surface);stroke-width:2}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 8px;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.swatch{width:10px;height:10px;border-radius:2px;flex:none}
+
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:5px 9px 5px 0;border-bottom:1px solid var(--rule)}
+th{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;
+  letter-spacing:.06em;user-select:none;white-space:nowrap;
+  position:sticky;top:0;background:var(--surface)}
+th[role=button]{cursor:pointer}
+th.sorted::after{content:" ↓"}
+th.sorted.asc::after{content:" ↑"}
+th[role=button]:hover{color:var(--ink)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}
+tbody tr:hover,tbody tr.on{background:var(--soft)}
+.tablebox{max-height:440px;overflow:auto}
+.variant{font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
+.empty{color:var(--ink-3);font-size:13px;padding:12px 0}
+.up{color:var(--up)}.down{color:var(--good)}
+.muted{color:var(--ink-3)}
+
+footer{margin-top:24px;padding-top:14px;border-top:1px solid var(--rule);
+  color:var(--ink-3);font-size:12.5px}
+code{font-family:var(--mono);font-size:.92em}
+#tip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:var(--ink);color:var(--surface);font-family:var(--mono);font-size:11.5px;
+  padding:5px 8px;border-radius:3px;max-width:280px;white-space:pre-line}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kassabon-dashboard</h1>
+    <span class="period" id="period"></span>
+    <span class="spacer"></span>
+    <button id="theme" type="button" title="Licht of donker">◐</button>
+  </header>
+
+  <div class="filters">
+    <label for="f-period">Periode</label><select id="f-period"></select>
+    <label for="f-cat">Categorie</label><select id="f-cat"></select>
+    <label for="f-store">Winkel</label><select id="f-store"></select>
+    <label for="f-q">Zoek</label>
+    <input type="search" id="f-q" placeholder="artikelnaam…" autocomplete="off">
+    <span id="chips"></span>
+    <span class="spacer"></span>
+    <button id="reset" type="button">Alles tonen</button>
+  </div>
+
+  <nav id="tabs" role="tablist"></nav>
+  <div class="kpis" id="kpis"></div>
+  <div id="panel"></div>
+
+  <footer>
+    <p>Statiegeld telt niet als uitgave, want dat is rondpompen, maar staat
+    apart in de kengetallen. Producten zijn gegroepeerd over de schrijfwijzen en
+    artikelnummers die de kassa door de jaren gebruikte.</p>
+    <p>Gegenereerd uit <code>data/receipts.db</code> met
+    <code>analysis/dashboard.py</code>.</p>
+  </footer>
+</div>
+<div id="tip" role="status"></div>
+
+<script>
+const D = /*__DATA__*/null;
+
+/* ---- formatting ------------------------------------------------------- */
+const fE = new Intl.NumberFormat('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f0 = new Intl.NumberFormat('nl-NL',{maximumFractionDigits:0});
+const f1 = new Intl.NumberFormat('nl-NL',{maximumFractionDigits:1});
+const eur = c => '€ ' + fE.format(c/100);
+const eur0 = c => '€ ' + f0.format(c/100);
+const num = n => f0.format(n);
+const MND = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+const DAG = ['ma','di','wo','do','vr','za','zo'];
+const DAGVOL = ['maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag','zondag'];
+const mLabel = m => MND[+m.slice(5,7)-1] + ' ' + m.slice(0,4);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- indices ---------------------------------------------------------- */
+const R_DATE=0, R_MONTH=1, R_WDAY=2, R_HOUR=3, R_STORE=4, R_TOTAL=5, R_LINES=6;
+const L_RCPT=0, L_PROD=1, L_QTY=2, L_NET=3, L_DISC=4, L_UNIT=5, L_HIVAT=6, L_VAR=7;
+const V_BARCODE=0, V_PROD=1, V_WEIGH=2;
+
+/* Spend rolls up per product -- that is what merging the till's renames is
+   for. Price never does: one name covers several pack sizes, and broccoli is
+   sold per piece under one article id and per kilo under another, so a series
+   across them charts the packaging instead of the price. Every price series
+   below therefore keys on the variant. */
+function priceSeries(filter) {
+  const per = new Map();
+  for (let i=0;i<D.lines.length;i++){
+    const l=D.lines[i];
+    if (!l[L_UNIT] || !filter(l)) continue;
+    const m=D.receipts[l[L_RCPT]][R_MONTH];
+    const k=l[L_VAR]+'|'+m;
+    const e=per.get(k)||{v:l[L_VAR],m,sum:0,n:0,spend:0};
+    e.sum+=l[L_UNIT]; e.n++; e.spend+=l[L_NET]; per.set(k,e);
+  }
+  const byVariant=new Map();
+  for (const e of per.values()){
+    const arr=byVariant.get(e.v)||[]; arr.push(e); byVariant.set(e.v,arr);
+  }
+  for (const arr of byVariant.values()) arr.sort((a,b)=>a.m-b.m);
+  return byVariant;
+}
+const variantLabel = vi => {
+  const v=D.variants[vi];
+  return (v[V_BARCODE]||'zonder artikelnummer') + ' · ' + (v[V_WEIGH]?'per kg':'per stuk');
+};
+const P_NAME=0, P_CAT=1, P_VAR=2, P_BC=3, P_FIRST=4, P_LAST=5, P_WEIGH=6;
+
+/* Weighed articles carry kilos in the quantity column. Rounding those to
+   whole units prints "0" for half a kilo of cheese, which reads as "never
+   bought". */
+const qtyText = (pi, q) => D.products[pi][P_WEIGH]
+  ? f1.format(q) + ' kg'
+  : num(Math.round(q));
+
+const years = [...new Set(D.months.map(m => m.slice(0,4)))].sort();
+const catOf = li => D.products[D.lines[li][L_PROD]][P_CAT];
+const isDepCat = li => catOf(li) === D.depositCat;
+
+/* Deposit is kept out of spending because it is money going in circles. But
+   when you deliberately filter on it, hiding it leaves every panel empty
+   while the KPI still shows a number -- so an explicit choice wins. */
+const depositPicked = () => state.cat === D.categories[D.depositCat];
+const isDep = li => isDepCat(li) && !depositPicked();
+
+const state = {period:'all', cat:'all', store:'all', q:'', tab:'overzicht',
+               product:null, receipt:null};
+let sortKey='spend', sortDir=-1;
+
+/* ---- scope ------------------------------------------------------------ */
+function scope() {
+  const catI = state.cat === 'all' ? -1 : D.categories.indexOf(state.cat);
+  const stI = state.store === 'all' ? -1 : D.stores.indexOf(state.store);
+  const q = state.q.trim().toLowerCase();
+  const okReceipt = new Uint8Array(D.receipts.length);
+  D.receipts.forEach((r, i) => {
+    if (state.period !== 'all' && D.months[r[R_MONTH]].slice(0,4) !== state.period) return;
+    if (stI >= 0 && r[R_STORE] !== stI) return;
+    okReceipt[i] = 1;
+  });
+  const lines = [];
+  for (let i = 0; i < D.lines.length; i++) {
+    const l = D.lines[i];
+    if (!okReceipt[l[L_RCPT]]) continue;
+    const p = D.products[l[L_PROD]];
+    if (catI >= 0 && p[P_CAT] !== catI) continue;
+    if (q && !p[P_NAME].toLowerCase().includes(q)) continue;
+    lines.push(i);
+  }
+  const receipts = [];
+  for (let i = 0; i < D.receipts.length; i++) if (okReceipt[i]) receipts.push(i);
+  return {lines, receipts, narrowed: catI >= 0 || q !== ''};
+}
+
+/* ---- svg -------------------------------------------------------------- */
+const svg = (w,h,body,label) =>
+  `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${body}</svg>`;
+
+function niceScale(top) {
+  if (top <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(top)));
+  return Math.ceil(top / (p/2)) * (p/2);
+}
+
+/* A five-line axis divides the scale by four, so whole-euro labels collide as
+   soon as the range is small: a 3-euro scale reads 0|1|2|2|3 with two lines
+   both called 2. Pick the decimals from the step, not from taste. */
+function moneyTick(scale) {
+  const step = scale/4;
+  const dec = step >= 400 ? 0 : step >= 40 ? 1 : 2;
+  const f = new Intl.NumberFormat('nl-NL',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return v => f.format(v/100);
+}
+function moneyCap(scale) {
+  const dec = scale >= 2000 ? 0 : scale >= 200 ? 1 : 2;
+  const f = new Intl.NumberFormat('nl-NL',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return v => '€ ' + f.format(v/100);
+}
+
+function columns(rows, opts={}) {
+  if (!rows.length || rows.every(r => !r.v))
+    return '<p class="empty">Geen bedragen in deze selectie.</p>';
+  const W = Math.max(opts.minWidth||700, rows.length * (opts.perCol||13)), H = opts.height||230;
+  const padL=52, padR=10, padT=24, padB=28;
+  const pw = W-padL-padR, ph = H-padT-padB;
+
+  /* A month can be negative -- a bottle return without a purchase -- and a
+     bar clamped at zero is indistinguishable from a month you did not shop.
+     The axis therefore runs from the lowest value, with a baseline drawn at
+     zero when it falls inside the range. */
+  const hi = niceScale(Math.max(0, ...rows.map(r=>r.v)));
+  const lowest = Math.min(0, ...rows.map(r=>r.v));
+  const lo = lowest < 0 ? -niceScale(-lowest) : 0;
+  const span = hi - lo || 1;
+  const yOf = v => padT + ph - ph*((v-lo)/span);
+  const fmtTick = opts.fmtTick || moneyTick(span);
+  const fmtCap = opts.fmtCap || moneyCap(span);
+  const band = pw/rows.length, bw = Math.min(24, band*0.62);
+  const dense = rows.length > 14;
+  let peak = 0; rows.forEach((r,i)=>{ if(Math.abs(r.v)>Math.abs(rows[peak].v)) peak=i; });
+
+  let s = '';
+  for (let i=0;i<=4;i++){
+    const v = lo + span*i/4, y = yOf(v);
+    s += `<line class="grid-line" x1="${padL-4}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}"/>`
+       + `<text class="tick" x="${padL-8}" y="${(y+3.5).toFixed(1)}">${fmtTick(v)}</text>`;
+  }
+  if (lo < 0) s += `<line class="zero-line" x1="${padL-4}" y1="${yOf(0).toFixed(1)}" x2="${W-padR}" y2="${yOf(0).toFixed(1)}"/>`;
+
+  rows.forEach((r,i)=>{
+    const cx = padL+band*(i+0.5);
+    const yTop = yOf(Math.max(0, r.v)), yBot = yOf(Math.min(0, r.v));
+    const h = Math.abs(yBot - yTop);
+    s += `<g data-tip="${esc(r.tip)}">`
+       + `<rect class="hit" x="${(cx-band/2).toFixed(1)}" y="${padT}" width="${band.toFixed(1)}" height="${ph}"/>`
+       + `<rect class="${r.v<0?'bar2':(r.alt?'bar2':'bar')}" x="${(cx-bw/2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3"/>`;
+    if (r.v!==0 && (!dense || i===peak))
+      s += `<text class="cap" x="${cx.toFixed(1)}" y="${(Math.min(yTop,yBot)-7).toFixed(1)}">${fmtCap(r.v)}</text>`;
+    if (r.x) s += `<text class="xlab" x="${cx.toFixed(1)}" y="${H-8}">${esc(r.x)}</text>`;
+    s += '</g>';
+  });
+  return svg(W,H,s,opts.label||'kolomgrafiek');
+}
+
+function bars(rows, opts={}) {
+  if (!rows.length || rows.every(r => !r.v))
+    return '<p class="empty">Geen bedragen in deze selectie.</p>';
+  const rowH = opts.rowH||25, labelW = opts.labelW||140, W = opts.width||560;
+  const fmt = opts.fmt || eur;
+  const valueW = Math.max(...rows.map(r=>fmt(r.v).length))*7 + 12;
+  const track = W-labelW-valueW;
+  const top = Math.max(...rows.map(r=>r.v)) || 1;
+  let s = '';
+  rows.forEach((r,i)=>{
+    const y=i*rowH, bh=13, w=Math.max(2,track*(r.v/top));
+    s += `<g class="catrow${r.on?' on':''}"${r.key?` data-cat="${esc(r.key)}"`:''} data-tip="${esc(r.tip||r.label+' · '+fmt(r.v))}"${r.key?' tabindex="0" role="button"':''}>`
+       + `<rect class="hit" x="0" y="${y}" width="${W}" height="${rowH}"/>`
+       + `<text class="rlab" x="${labelW-10}" y="${y+rowH/2+4}">${esc(r.label)}</text>`
+       + `<rect class="bar" x="${labelW}" y="${y+(rowH-bh)/2}" width="${w.toFixed(1)}" height="${bh}" rx="3"/>`
+       + `<text class="rval" x="${(labelW+w+8).toFixed(1)}" y="${y+rowH/2+4}">${fmt(r.v)}</text></g>`;
+  });
+  return svg(W, rows.length*rowH+4, s, opts.label||'balkgrafiek');
+}
+
+function lineChart(points, opts={}) {
+  if (points.length < 2) return '<p class="empty">Te weinig waarnemingen.</p>';
+  const W = opts.width||720, H = opts.height||210;
+  const fmtPeek = opts.fmt||eur;
+  /* Reserve the right margin from the label that actually gets drawn: a
+     four-digit price ran off the viewBox and lost its last characters. */
+  const padL=56, padR=Math.max(52, fmtPeek(Math.max(...points.map(p=>p.v))).length*7.2+14), padT=16, padB=26;
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const vals = points.map(p=>p.v);
+  const lo0=Math.min(...vals), hi0=Math.max(...vals);
+  const pad=(hi0-lo0)*0.15 || Math.max(1,hi0*0.1);
+  const lo=opts.fromZero?0:lo0-pad, hi=hi0+pad;
+  const x=i=>padL+(points.length===1?pw/2:pw*i/(points.length-1));
+  const y=v=>padT+ph-ph*((v-lo)/(hi-lo||1));
+  const fmt = opts.fmt||eur;
+  let s='';
+  for (const v of (opts.fromZero?[lo0,hi0]:[lo0,hi0])) {
+    s += `<line class="grid-line" x1="${padL-4}" y1="${y(v).toFixed(1)}" x2="${W-padR}" y2="${y(v).toFixed(1)}"/>`
+       + `<text class="tick" x="${padL-8}" y="${(y(v)+3.5).toFixed(1)}">${fmt(v)}</text>`;
+  }
+  if (opts.area)
+    s += `<path class="area" d="M${x(0).toFixed(1)} ${y(lo).toFixed(1)} `
+       + points.map((p,i)=>`L${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' ')
+       + ` L${x(points.length-1).toFixed(1)} ${y(lo).toFixed(1)} Z"/>`;
+  s += `<path class="line" d="${points.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ')}"/>`;
+  /* One hit band per point rather than overlapping circles: with seventy
+     months the circles overlap and the tooltip reports the neighbour. */
+  const halfBand = points.length>1 ? pw/(points.length-1)/2 : pw/2;
+  points.forEach((p,i)=>{
+    s += `<rect class="hit" x="${(x(i)-halfBand).toFixed(1)}" y="${padT}" `
+       + `width="${(halfBand*2).toFixed(1)}" height="${ph}" data-tip="${esc(p.tip)}"/>`;
+  });
+  const last=points[points.length-1];
+  s += `<circle class="dot" cx="${x(points.length-1).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="4.5"/>`
+     + `<text class="rval" x="${W-padR+6}" y="${(y(last.v)+4).toFixed(1)}">${fmt(last.v)}</text>`
+     + `<text class="xlab" x="${x(0).toFixed(1)}" y="${H-8}">${esc(points[0].x)}</text>`
+     + `<text class="xlab" x="${x(points.length-1).toFixed(1)}" y="${H-8}">${esc(last.x)}</text>`;
+  return svg(W,H,s,opts.label||'lijngrafiek');
+}
+</script>
+<script>
+/* ---- panels ----------------------------------------------------------- */
+const HEATS = ['--heat0','--heat1','--heat2','--heat3','--heat4','--heat5'];
+
+function panelOverzicht(sc) {
+  const perMonth = new Map();
+  for (const li of sc.lines) {
+    if (isDep(li)) continue;
+    const m = D.receipts[D.lines[li][L_RCPT]][R_MONTH];
+    perMonth.set(m, (perMonth.get(m)||0) + D.lines[li][L_NET]);
+  }
+  const monthsIn = [...new Set(sc.receipts.map(i=>D.receipts[i][R_MONTH]))].sort((a,b)=>a-b);
+  const rows = monthsIn.map(mi => ({
+    v: perMonth.get(mi)||0,
+    x: monthsIn.length>14 ? (D.months[mi].slice(5,7)==='01'?D.months[mi].slice(0,4):'') : mLabel(D.months[mi]),
+    tip: mLabel(D.months[mi]) + ' · ' + eur(perMonth.get(mi)||0),
+  }));
+
+  const perCat = new Map();
+  for (const li of sc.lines) {
+    const c = catOf(li);
+    if (c === D.depositCat) continue;
+    perCat.set(c, (perCat.get(c)||0) + D.lines[li][L_NET]);
+  }
+  const catRows = [...perCat.entries()].sort((a,b)=>b[1]-a[1]).map(([c,v])=>({
+    label: D.categories[c], v, key: D.categories[c], on: state.cat===D.categories[c],
+  }));
+
+  return `<div class="card"><h2>Uitgaven per maand</h2>
+      <p class="hint">${monthsIn.length>14?'Alleen jaargrenzen gelabeld. ':''}Beweeg over een kolom voor het bedrag.</p>
+      <div class="scroll">${columns(rows,{label:'Uitgaven per maand'})}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Per categorie</h2><p class="hint">Klik een balk om erop te filteren.</p>
+        <div class="scroll">${bars(catRows,{label:'Uitgaven per categorie'})}</div></div>
+      <div class="card"><h2>Grootste producten</h2><p class="hint" id="prod-hint"></p>
+        <div class="tablebox">${productTable(sc)}</div></div>
+    </div>` + detailCard();
+}
+
+function panelTijd(sc) {
+  const grid = Array.from({length:7},()=>new Array(24).fill(0));
+  const perDay = new Array(7).fill(0), cntDay = new Array(7).fill(0);
+  for (const ri of sc.receipts) {
+    const r = D.receipts[ri];
+    grid[r[R_WDAY]][r[R_HOUR]]++;
+    perDay[r[R_WDAY]] += r[R_TOTAL]; cntDay[r[R_WDAY]]++;
+  }
+  const max = Math.max(1, ...grid.flat());
+
+  /* Only the hours you actually shop. Nine columns of empty midnight cells
+     push the real pattern into a corner. */
+  const used = [];
+  for (let h=0;h<24;h++) if (grid.some(r=>r[h]>0)) used.push(h);
+  const hours = used.length ? used : [12];
+  const cw=Math.max(24, Math.min(38, 640/hours.length)), chh=22, left=34, topPad=18;
+  let hs='';
+  hours.forEach((h,c)=>{
+    if (c%2===0) hs += `<text class="xlab" x="${left+c*cw+cw/2}" y="${topPad-6}">${h}</text>`;
+  });
+  for (let d=0;d<7;d++){
+    hs += `<text class="rlab" x="${left-8}" y="${topPad+d*chh+chh/2+4}">${DAG[d]}</text>`;
+    hours.forEach((h,c)=>{
+      const n=grid[d][h];
+      const step = n===0?0:Math.min(5, 1+Math.floor(n/max*4.999));
+      hs += `<rect class="cell" x="${left+c*cw}" y="${topPad+d*chh}" width="${cw}" height="${chh}" `
+          + `fill="var(${HEATS[step]})" data-tip="${DAGVOL[d]} ${h}:00 · ${n} ${n===1?'bezoek':'bezoeken'}"/>`;
+    });
+  }
+  const heat = svg(left+hours.length*cw+8, topPad+7*chh+8, hs, 'Bezoeken per weekdag en uur');
+
+  const dayRows = DAGVOL.map((d,i)=>({
+    label: d, v: perDay[i],
+    tip: `${d} · ${cntDay[i]} bonnen · ${eur(perDay[i])} · gemiddeld ${cntDay[i]?eur(Math.round(perDay[i]/cntDay[i])):'—'}`,
+  }));
+
+  const sorted = sc.receipts.slice().sort((a,b)=>D.receipts[a][R_DATE]<D.receipts[b][R_DATE]?-1:1);
+  const gaps=[];
+  for (let i=1;i<sorted.length;i++){
+    const a=new Date(D.receipts[sorted[i-1]][R_DATE]), b=new Date(D.receipts[sorted[i]][R_DATE]);
+    const d=Math.round((b-a)/86400000);
+    if (d>=0 && d<=30) gaps.push(d);
+  }
+  const gapHist = new Array(15).fill(0);
+  for (const g of gaps) gapHist[Math.min(14,g)]++;
+  const gapRows = gapHist.map((n,i)=>({
+    v:n, x: i===14?'14+':String(i),
+    tip: `${i===14?'14 dagen of meer':i+' dag'+(i===1?'':'en')} · ${n} keer`,
+  }));
+  const mediaan = gaps.length ? gaps.slice().sort((a,b)=>a-b)[Math.floor(gaps.length/2)] : 0;
+
+  const byHour = new Map();
+  for (const ri of sc.receipts) {
+    const r=D.receipts[ri];
+    const e=byHour.get(r[R_HOUR])||{sum:0,n:0,lines:0};
+    e.sum+=r[R_TOTAL]; e.n++; e.lines+=r[R_LINES]; byHour.set(r[R_HOUR],e);
+  }
+  const hourRows=[...byHour.entries()].sort((a,b)=>a[0]-b[0]).map(([h,e])=>({
+    v: Math.round(e.sum/e.n), x: h+'u',
+    tip: `${h}:00 · ${e.n} ${e.n===1?'bezoek':'bezoeken'} · gemiddeld ${eur(Math.round(e.sum/e.n))} en ${f1.format(e.lines/e.n)} regels`,
+  }));
+
+  return `<div class="card"><h2>Wanneer je winkelt</h2>
+      <p class="hint">Elk vakje is een weekdag en uur; donkerder is vaker. ${sc.receipts.length} bonnen.</p>
+      <div class="scroll">${heat}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Uitgaven per weekdag</h2>
+        <p class="hint">Beweeg over een balk voor het aantal bonnen en het gemiddelde.</p>
+        <div class="scroll">${bars(dayRows,{label:'Uitgaven per weekdag',labelW:96})}</div></div>
+      <div class="card"><h2>Mandje per uur van de dag</h2>
+        <p class="hint">Gemiddeld bonbedrag per uur. Hoe later, hoe kleiner de greep.</p>
+        <div class="scroll">${columns(hourRows,{label:'Gemiddeld bonbedrag per uur',perCol:44,minWidth:520,height:200})}</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>Dagen tussen twee bezoeken</h2>
+        <p class="hint">Mediaan ${mediaan} dag${mediaan===1?'':'en'}. Onderbrekingen langer dan 30 dagen zijn weggelaten.</p>
+        <div class="scroll">${columns(gapRows,{label:'Dagen tussen bezoeken',perCol:34,minWidth:520,height:200,fmtCap:v=>num(v),fmtTick:v=>f0.format(v)})}</div></div>
+    </div>`;
+}
+
+function panelCategorie(sc) {
+  const perYearCat = new Map();
+  for (const li of sc.lines) {
+    const c = catOf(li); if (c===D.depositCat) continue;
+    const y = D.months[D.receipts[D.lines[li][L_RCPT]][R_MONTH]].slice(0,4);
+    const k = y+'|'+c;
+    perYearCat.set(k, (perYearCat.get(k)||0) + D.lines[li][L_NET]);
+  }
+  const ys = [...new Set(sc.receipts.map(i=>D.months[D.receipts[i][R_MONTH]].slice(0,4)))].sort();
+  const totalsByCat = new Map();
+  for (const [k,v] of perYearCat) {
+    const c = +k.split('|')[1];
+    totalsByCat.set(c, (totalsByCat.get(c)||0)+v);
+  }
+  const topCats = [...totalsByCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,7).map(e=>e[0]);
+  const palette = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7'];
+
+  const W=760, H=300, padL=48, padR=140, padT=16, padB=28;
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const yearTotals = ys.map(y => topCats.reduce((a,c)=>a+(perYearCat.get(y+'|'+c)||0),0)
+    + [...totalsByCat.keys()].filter(c=>!topCats.includes(c)).reduce((a,c)=>a+(perYearCat.get(y+'|'+c)||0),0));
+  const scale = niceScale(Math.max(1,...yearTotals));
+  const band = pw/ys.length, bw = Math.min(46, band*0.6);
+  let s='';
+  for (let i=0;i<=4;i++){
+    const v=scale*i/4, yy=padT+ph-ph*(v/scale);
+    s+=`<line class="grid-line" x1="${padL-4}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}"/>`
+      +`<text class="tick" x="${padL-8}" y="${(yy+3.5).toFixed(1)}">${f0.format(v/100)}</text>`;
+  }
+  ys.forEach((y,i)=>{
+    const cx=padL+band*(i+0.5); let acc=0;
+    const others=[...totalsByCat.keys()].filter(c=>!topCats.includes(c))
+      .reduce((a,c)=>a+(perYearCat.get(y+'|'+c)||0),0);
+    const segs = topCats.map((c,ci)=>({v:perYearCat.get(y+'|'+c)||0,col:palette[ci],name:D.categories[c]}))
+      .concat(others>0?[{v:others,col:null,name:'overige'}]:[]);
+    for (const seg of segs) {
+      if (seg.v<=0) continue;
+      const h=ph*(seg.v/scale), yy=padT+ph-ph*(acc/scale)-h;
+      s+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h-2).toFixed(1)}" rx="2" `
+        +`fill="${seg.col?`var(${seg.col})`:'var(--axis)'}" data-tip="${esc(y+' · '+seg.name+' · '+eur(seg.v))}"/>`;
+      acc+=seg.v;
+    }
+    s+=`<text class="xlab" x="${cx.toFixed(1)}" y="${H-8}">${y}</text>`
+      +`<text class="cap" x="${cx.toFixed(1)}" y="${(padT+ph-ph*(acc/scale)-8).toFixed(1)}">${eur0(acc)}</text>`;
+  });
+  topCats.forEach((c,ci)=>{
+    s+=`<rect x="${W-padR+10}" y="${padT+ci*20}" width="10" height="10" rx="2" fill="var(${palette[ci]})"/>`
+      +`<text class="rval" x="${W-padR+26}" y="${padT+ci*20+9}">${esc(D.categories[c])}</text>`;
+  });
+
+  const shareRows = [...totalsByCat.entries()].sort((a,b)=>b[1]-a[1]).map(([c,v])=>{
+    const first = perYearCat.get(ys[0]+'|'+c)||0, last = perYearCat.get(ys[ys.length-1]+'|'+c)||0;
+    return {label:D.categories[c], v, key:D.categories[c], on:state.cat===D.categories[c],
+      tip:`${D.categories[c]} · ${eur(v)} · ${ys[0]}: ${eur(first)} → ${ys[ys.length-1]}: ${eur(last)}`};
+  });
+
+  return `<div class="card"><h2>Categorieën per jaar</h2>
+      <p class="hint">De zeven grootste apart, de rest samengevat als “overige”. Beweeg over een segment.</p>
+      <div class="scroll">${svg(W,H,s,'Uitgaven per categorie per jaar')}</div></div>
+    <div class="card"><h2>Totaal per categorie</h2>
+      <p class="hint">De tooltip toont het eerste en laatste jaar, zodat je ziet welke kant het op gaat.</p>
+      <div class="scroll">${bars(shareRows,{label:'Totaal per categorie',width:640})}</div></div>`;
+}
+
+function panelProducten(sc) {
+  const perProd = productTotals(sc);
+  const starters = [...perProd.values()]
+    .filter(r=>D.products[r.pi][P_FIRST] >= D.months.length-18)
+    .sort((a,b)=>b.spend-a.spend).slice(0,12);
+  const stopped = [...perProd.values()]
+    .filter(r=>D.products[r.pi][P_LAST] < D.months.length-18 && r.spend>1000)
+    .sort((a,b)=>b.spend-a.spend).slice(0,12);
+
+  const tbl = rows => rows.length ? `<table><tbody>${rows.map(r=>{
+      const p=D.products[r.pi];
+      return `<tr data-pi="${r.pi}"><td>${esc(p[P_NAME])}</td>`
+        + `<td class="num">${eur(r.spend)}</td>`
+        + `<td class="num muted">${D.months[p[P_FIRST]]} – ${D.months[p[P_LAST]]}</td></tr>`;
+    }).join('')}</tbody></table>` : '<p class="empty">Niets gevonden.</p>';
+
+  return `<div class="card"><h2>Alle producten</h2><p class="hint" id="prod-hint"></p>
+      <div class="tablebox">${productTable(sc)}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Nieuw in je mandje</h2>
+        <p class="hint">Voor het eerst gekocht in de laatste anderhalf jaar.</p>${tbl(starters)}</div>
+      <div class="card"><h2>Niet meer gekocht</h2>
+        <p class="hint">Meer dan anderhalf jaar niet meer gezien, terwijl je er wel meer dan € 10 aan uitgaf.</p>${tbl(stopped)}</div>
+    </div>` + detailCard();
+}
+
+function panelPrijzen(sc) {
+  const inScope = new Set(sc.lines);
+  const byVariant = priceSeries(l => true);
+  const movers=[];
+  for (const [vi,arr] of byVariant) {
+    const pi = D.variants[vi][V_PROD];
+    if (D.products[pi][P_CAT]===D.depositCat && !depositPicked()) continue;
+    /* Only months that survive the current filter. */
+    const kept = arr.filter(e => {
+      const y = D.months[e.m].slice(0,4);
+      if (state.period!=='all' && y!==state.period) return false;
+      if (state.cat!=='all' && D.categories[D.products[pi][P_CAT]]!==state.cat) return false;
+      if (state.q.trim() && !D.products[pi][P_NAME].toLowerCase().includes(state.q.trim().toLowerCase())) return false;
+      return true;
+    });
+    if (kept.length<2) continue;
+    const first=kept[0], last=kept[kept.length-1];
+    const fp=first.sum/first.n, lp=last.sum/last.n;
+    if (!fp) continue;
+    movers.push({pi, vi, pct:(lp-fp)/fp*100, spend:kept.reduce((a,x)=>a+x.spend,0),
+                 first:{price:fp,m:first.m}, last:{price:lp,m:last.m}});
+  }
+  const weight = movers.reduce((a,m)=>a+m.spend,0);
+  const index = weight ? movers.reduce((a,m)=>a+m.pct*m.spend,0)/weight : 0;
+
+  const risers = movers.filter(m=>m.pct>0).sort((a,b)=>b.pct-a.pct).slice(0,10);
+  const fallers = movers.filter(m=>m.pct<0).sort((a,b)=>a.pct-b.pct).slice(0,10);
+  const moverTable = rows => rows.length ? `<table><tbody>${rows.map(m=>{
+      const p=D.products[m.pi];
+      const multi=[...byVariant.keys()].filter(v=>D.variants[v][V_PROD]===m.pi).length>1;
+      return `<tr data-pi="${m.pi}"><td>${esc(p[P_NAME])}`
+        +`${multi?` <span class="variant">${esc(D.variants[m.vi][V_WEIGH]?'per kg':'per stuk')}</span>`:''}</td>`
+        +`<td class="num muted">${eur(Math.round(m.first.price))} → ${eur(Math.round(m.last.price))}</td>`
+        +`<td class="num ${m.pct>0?'up':'down'}">${m.pct>0?'+':''}${f0.format(m.pct)}%</td></tr>`;
+    }).join('')}</tbody></table>` : '<p class="empty">Te weinig herhaalaankopen.</p>';
+
+  return `<div class="card"><h2>Je eigen mandje</h2>
+      <p class="hint">Per <strong>artikelnummer</strong> de prijs bij de eerste aankoop tegenover
+      de laatste, gewogen naar wat het in je mandje kost, niet per productnaam. Eén naam dekt
+      vaak meerdere verpakkingen, en soms een andere eenheid: broccoli werd eerst per stuk
+      afgerekend en later per kilo. Op één hoop toont dat een prijssprong die er niet is.
+      ${num(movers.length)} artikelnummers die je in meer dan één maand kocht.</p>
+      <p class="kpi-value" style="font-size:30px">${index>0?'+':''}${f1.format(index)}%</p>
+      <p class="kpi-note">Let op wat dit wel en niet meet: het interval verschilt per product, dus dit is geen inflatiecijfer over een vaste periode.</p></div>
+    <div class="grid">
+      <div class="card"><h2>Hardst gestegen</h2><p class="hint">Klik een rij voor het prijsverloop.</p>${moverTable(risers)}</div>
+      <div class="card"><h2>Hardst gedaald</h2><p class="hint">Klik een rij voor het prijsverloop.</p>${moverTable(fallers)}</div>
+    </div>` + detailCard();
+}
+
+function panelKorting(sc) {
+  const perMonth=new Map(), perCat=new Map(), perProd=new Map();
+  let disc=0, gross=0;
+  for (const li of sc.lines) {
+    const l=D.lines[li];
+    const m=D.receipts[l[L_RCPT]][R_MONTH];
+    perMonth.set(m,(perMonth.get(m)||0)+l[L_DISC]);
+    disc+=l[L_DISC]; gross+=l[L_NET]+l[L_DISC];
+    if (l[L_DISC]>0){
+      const c=catOf(li); perCat.set(c,(perCat.get(c)||0)+l[L_DISC]);
+      perProd.set(l[L_PROD],(perProd.get(l[L_PROD])||0)+l[L_DISC]);
+    }
+  }
+  const monthsIn=[...new Set(sc.receipts.map(i=>D.receipts[i][R_MONTH]))].sort((a,b)=>a-b);
+  const rows=monthsIn.map(mi=>({v:perMonth.get(mi)||0,
+    x: monthsIn.length>14?(D.months[mi].slice(5,7)==='01'?D.months[mi].slice(0,4):''):mLabel(D.months[mi]),
+    tip: mLabel(D.months[mi])+' · '+eur(perMonth.get(mi)||0)}));
+  const grossCat=new Map();
+  for (const li of sc.lines){ const l=D.lines[li];
+    grossCat.set(catOf(li),(grossCat.get(catOf(li))||0)+l[L_NET]+l[L_DISC]); }
+  const catRows=[...perCat.entries()].sort((a,b)=>b[1]-a[1])
+    .map(([c,v])=>({label:D.categories[c],v,
+      tip:`${D.categories[c]} · ${eur(v)} korting op ${eur(grossCat.get(c)||0)} bruto · ${f1.format(v/(grossCat.get(c)||1)*100)}%`}));
+  const rateRows=[...grossCat.entries()].filter(([c,g])=>g>5000)
+    .map(([c,g])=>({label:D.categories[c], v:Math.round((perCat.get(c)||0)/g*1000),
+      tip:`${D.categories[c]} · ${f1.format((perCat.get(c)||0)/g*100)}% van ${eur(g)} bruto`}))
+    .sort((a,b)=>b.v-a.v);
+  const prodRows=[...perProd.entries()].sort((a,b)=>b[1]-a[1]).slice(0,14)
+    .map(([pi,v])=>({label:D.products[pi][P_NAME],v}));
+
+  return `<div class="card"><h2>Korting per maand</h2>
+      <p class="hint">In totaal ${eur(disc)} op ${eur(gross)} bruto, ${gross?f1.format(disc/gross*100):0}%.</p>
+      <div class="scroll">${columns(rows,{label:'Korting per maand'})}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Korting per categorie</h2><p class="hint">Waar de kortingen landen.</p>
+        <div class="scroll">${bars(catRows,{label:'Korting per categorie'})}</div></div>
+      <div class="card"><h2>Kortingspercentage per categorie</h2>
+        <p class="hint">Welk deel van het brutobedrag eraf ging. Alleen categorieën boven € 50 bruto.</p>
+        <div class="scroll">${bars(rateRows,{label:'Kortingspercentage per categorie',fmt:v=>f1.format(v/10)+'%'})}</div></div>
+    </div>
+    <div class="card"><h2>Meest afgeprijsde producten</h2><p class="hint">Optelsom over de hele selectie.</p>
+      <div class="scroll">${bars(prodRows,{label:'Korting per product',labelW:170,width:640})}</div></div>`;
+}
+
+function panelMandje(sc) {
+  const totals = sc.receipts.map(i=>D.receipts[i][R_TOTAL]).sort((a,b)=>a-b);
+  if (!totals.length) return '<p class="empty">Geen bonnen in deze selectie.</p>';
+  const buckets = [0,1000,2000,3000,4000,5000,7500,10000,15000,Infinity];
+  const labels = ['< 10','10–20','20–30','30–40','40–50','50–75','75–100','100–150','150+'];
+  const hist = new Array(labels.length).fill(0);
+  for (const t of totals) {
+    for (let i=0;i<labels.length;i++) if (t>=buckets[i] && t<buckets[i+1]) { hist[i]++; break; }
+  }
+  const rows = hist.map((n,i)=>({v:n,x:labels[i],tip:`€ ${labels[i]} · ${n} bonnen`}));
+  const med = totals[Math.floor(totals.length/2)];
+  const linesPer = sc.receipts.map(i=>D.receipts[i][R_LINES]).sort((a,b)=>a-b);
+  const medLines = linesPer[Math.floor(linesPer.length/2)];
+
+  const big = sc.receipts.slice().sort((a,b)=>D.receipts[b][R_TOTAL]-D.receipts[a][R_TOTAL]).slice(0,10);
+  const small = sc.receipts.slice().sort((a,b)=>D.receipts[a][R_TOTAL]-D.receipts[b][R_TOTAL]).slice(0,10);
+  const rTable = idxs => `<table><tbody>${idxs.map(i=>{
+    const r=D.receipts[i];
+    return `<tr data-ri="${i}"><td>${r[R_DATE]}</td><td class="muted">${esc(D.stores[r[R_STORE]])}</td>`
+      +`<td class="num">${r[R_LINES]}</td><td class="num">${eur(r[R_TOTAL])}</td></tr>`;
+  }).join('')}</tbody></table>`;
+
+  /* Sorted by date so the gap to the previous visit is meaningful. */
+  const chron = sc.receipts.slice().sort((a,b)=>D.receipts[a][R_DATE]<D.receipts[b][R_DATE]?-1:1);
+  const buckets2=[{l:'zelfde dag',max:1},{l:'1 dag',max:2},{l:'2–3 dagen',max:4},
+                  {l:'4–7 dagen',max:8},{l:'8+ dagen',max:Infinity}];
+  const gapAgg=buckets2.map(b=>({...b,sum:0,n:0,lines:0}));
+  for (let i=1;i<chron.length;i++){
+    const prev=new Date(D.receipts[chron[i-1]][R_DATE]), cur=D.receipts[chron[i]];
+    const d=Math.round((new Date(cur[R_DATE])-prev)/86400000);
+    if (d<0) continue;
+    const b=gapAgg.find(x=>d<x.max);
+    b.sum+=cur[R_TOTAL]; b.n++; b.lines+=cur[R_LINES];
+  }
+  const gapRows=gapAgg.filter(b=>b.n).map(b=>({
+    v: Math.round(b.sum/b.n), x: b.l,
+    tip: `${b.l} sinds het vorige bezoek · ${b.n} bonnen · gemiddeld ${eur(Math.round(b.sum/b.n))} en ${f1.format(b.lines/b.n)} regels`,
+  }));
+
+  const smallSet=new Set(), bigSet=new Set();
+  for (const ri of sc.receipts) {
+    const l=D.receipts[ri][R_LINES];
+    if (l<=8) smallSet.add(ri); else if (l>=26) bigSet.add(ri);
+  }
+  const mix=(set)=>{
+    const per=new Map(); let tot=0;
+    for (const li of sc.lines){
+      const l=D.lines[li]; if(!set.has(l[L_RCPT])||isDep(li)) continue;
+      per.set(catOf(li),(per.get(catOf(li))||0)+l[L_NET]); tot+=l[L_NET];
+    }
+    return [...per.entries()].sort((a,b)=>b[1]-a[1]).slice(0,7)
+      .map(([c,v])=>({label:D.categories[c], v: tot?Math.round(v/tot*1000):0,
+        tip:`${D.categories[c]} · ${(v/tot*100).toFixed(1)}% van een klein mandje · ${eur(v)}`}));
+  };
+  const pct=v=>f1.format(v/10)+'%';
+
+  return `<div class="card"><h2>Hoe groot is een bon</h2>
+      <p class="hint">Mediaan ${eur(med)} en ${medLines} artikelregels, over ${num(totals.length)} bonnen.</p>
+      <div class="scroll">${columns(rows,{label:'Verdeling bongrootte',perCol:60,minWidth:560,fmtCap:v=>num(v),fmtTick:v=>f0.format(v)})}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Hoe langer geleden, hoe voller</h2>
+        <p class="hint">Gemiddeld bonbedrag naar de tijd sinds je vorige bezoek.</p>
+        <div class="scroll">${columns(gapRows,{label:'Bonbedrag naar tijd sinds vorig bezoek',perCol:80,minWidth:480,height:200})}</div></div>
+      <div class="card"><h2>Klein mandje versus groot</h2>
+        <p class="hint">Aandeel per categorie in bonnen tot 8 regels (${smallSet.size}) tegenover 26 regels of meer (${bigSet.size}).</p>
+        <div class="scroll">${bars(mix(smallSet),{label:'Samenstelling klein mandje',fmt:pct,width:520})}</div>
+        <p class="hint" style="margin-top:10px">Grote bonnen:</p>
+        <div class="scroll">${bars(mix(bigSet),{label:'Samenstelling groot mandje',fmt:pct,width:520})}</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>Grootste bonnen</h2><p class="hint">Klik voor de inhoud.</p>${rTable(big)}</div>
+      <div class="card"><h2>Kleinste bonnen</h2><p class="hint">Klik voor de inhoud.</p>${rTable(small)}</div>
+    </div>` + receiptCard();
+}
+
+function panelBonnen(sc) {
+  const idxs = sc.receipts.slice().sort((a,b)=>D.receipts[b][R_DATE]<D.receipts[a][R_DATE]?-1:1);
+  const rows = idxs.slice(0,400).map(i=>{
+    const r=D.receipts[i];
+    return `<tr data-ri="${i}" class="${state.receipt===i?'on':''}">`
+      +`<td>${r[R_DATE]}</td><td class="muted">${DAG[r[R_WDAY]]} ${String(r[R_HOUR]).padStart(2,'0')}:00</td>`
+      +`<td class="muted">${esc(D.stores[r[R_STORE]])}</td>`
+      +`<td class="num">${r[R_LINES]}</td><td class="num">${eur(r[R_TOTAL])}</td></tr>`;
+  }).join('');
+  return `<div class="card"><h2>Alle bonnen</h2>
+      <p class="hint">${num(idxs.length)} bonnen${idxs.length>400?', de 400 recentste getoond':''}. Klik er een voor de inhoud.</p>
+      <div class="tablebox"><table><thead><tr><th>Datum</th><th>Tijd</th><th>Winkel</th>
+        <th class="num">Regels</th><th class="num">Totaal</th></tr></thead><tbody>${rows}</tbody></table></div></div>`
+    + receiptCard();
+}
+
+function panelSeizoen(sc) {
+  /* Index = a category's share of a calendar month against its share of the
+     whole year. 1,00 is flat, so the colour says "more or less than usual in
+     this month" rather than "much or little", which a raw euro heatmap would
+     confuse with how big the category is. */
+  const perCatMonth = new Map(), perCat = new Map(), perMonth = new Map();
+  let grand = 0;
+  for (const li of sc.lines) {
+    const c = catOf(li); if (c === D.depositCat) continue;
+    const mm = D.months[D.receipts[D.lines[li][L_RCPT]][R_MONTH]].slice(5,7);
+    const v = D.lines[li][L_NET];
+    perCatMonth.set(c+'|'+mm, (perCatMonth.get(c+'|'+mm)||0)+v);
+    perCat.set(c,(perCat.get(c)||0)+v);
+    perMonth.set(mm,(perMonth.get(mm)||0)+v);
+    grand += v;
+  }
+  const cats = [...perCat.entries()].filter(([,v])=>v>20000).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+  if (!cats.length || !grand) return '<p class="empty">Te weinig data voor een seizoenspatroon.</p>';
+
+  const mm = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const cw=52, chh=24, left=132, topPad=20;
+  let hs='';
+  mm.forEach((m,i)=> hs += `<text class="xlab" x="${left+i*cw+cw/2}" y="${topPad-6}">${MND[i]}</text>`);
+  cats.forEach((c,r)=>{
+    hs += `<text class="rlab" x="${left-10}" y="${topPad+r*chh+chh/2+4}">${esc(D.categories[c])}</text>`;
+    mm.forEach((m,i)=>{
+      const v = perCatMonth.get(c+'|'+m)||0;
+      const expect = (perCat.get(c)*(perMonth.get(m)||0))/grand;
+      const idx = expect>0 ? v/expect : 0;
+      /* Diverging around 1: blue below usual, orange above. */
+      const d = Math.max(-1, Math.min(1, (idx-1)/0.6));
+      const col = d>=0 ? `color-mix(in srgb, var(--s2) ${Math.round(d*72)}%, var(--heat0))`
+                       : `color-mix(in srgb, var(--s1) ${Math.round(-d*72)}%, var(--heat0))`;
+      hs += `<rect class="cell" x="${left+i*cw}" y="${topPad+r*chh}" width="${cw}" height="${chh}" fill="${col}" `
+          + `data-tip="${esc(D.categories[c])} · ${MND[i]} · index ${f1.format(idx*100)/100 || idx.toFixed(2)} · ${eur(v)}"/>`
+          + `<text class="xlab" x="${left+i*cw+cw/2}" y="${topPad+r*chh+chh/2+4}" style="font-size:9.5px;fill:var(--ink-2)">${idx?idx.toFixed(2):''}</text>`;
+    });
+  });
+  const heat = svg(left+12*cw+8, topPad+cats.length*chh+8, hs, 'Seizoensindex per categorie');
+
+  /* Products that live in one half of the year. */
+  const perProdHalf = new Map();
+  for (const li of sc.lines) {
+    if (isDep(li)) continue;
+    const l = D.lines[li];
+    const m = +D.months[D.receipts[l[L_RCPT]][R_MONTH]].slice(5,7);
+    const e = perProdHalf.get(l[L_PROD]) || {zomer:0, n:0, spend:0, jaren:new Set()};
+    if (m>=4 && m<=9) e.zomer++;
+    e.n++; e.spend += l[L_NET];
+    e.jaren.add(D.months[D.receipts[l[L_RCPT]][R_MONTH]].slice(0,4));
+    perProdHalf.set(l[L_PROD], e);
+  }
+  const seizoens = [...perProdHalf.entries()]
+    .filter(([,e])=>e.n>=8 && e.jaren.size>=3)
+    .map(([pi,e])=>({pi, share:e.zomer/e.n, n:e.n, spend:e.spend}))
+    .filter(s=>s.share>=0.85 || s.share<=0.15);
+  const zomer = seizoens.filter(s=>s.share>=0.85).sort((a,b)=>b.n-a.n).slice(0,10);
+  const winter = seizoens.filter(s=>s.share<=0.15).sort((a,b)=>b.n-a.n).slice(0,10);
+  const sTable = rows => rows.length ? `<table><tbody>${rows.map(s=>
+      `<tr data-pi="${s.pi}"><td>${esc(D.products[s.pi][P_NAME])}</td>`
+      +`<td class="num">${s.n}x</td><td class="num">${eur(s.spend)}</td>`
+      +`<td class="num muted">${f0.format(s.share*100)}% zomer</td></tr>`).join('')}</tbody></table>`
+    : '<p class="empty">Geen uitgesproken seizoensproducten in deze selectie.</p>';
+
+  return `<div class="card"><h2>Seizoensindex per categorie</h2>
+      <p class="hint">Het aandeel van een categorie in die kalendermaand, gedeeld door haar aandeel over het hele jaar.
+      1,00 is vlak, oranje is meer dan gebruikelijk, blauw minder. Alle jaren opgeteld.</p>
+      <div class="scroll">${heat}</div></div>
+    <div class="grid">
+      <div class="card"><h2>Alleen in de zomer</h2>
+        <p class="hint">Minstens 8 keer gekocht in 3 verschillende jaren, waarvan 85% of meer in april t/m september.</p>${sTable(zomer)}</div>
+      <div class="card"><h2>Alleen in de winter</h2>
+        <p class="hint">Dezelfde drempel, maar 85% of meer buiten het zomerhalfjaar.</p>${sTable(winter)}</div>
+    </div>` + detailCard();
+}
+
+/* ---- shared pieces ---------------------------------------------------- */
+function productTotals(sc) {
+  const per = new Map();
+  for (const li of sc.lines) {
+    if (isDep(li)) continue;
+    const l = D.lines[li];
+    let r = per.get(l[L_PROD]);
+    if (!r) { r={pi:l[L_PROD],spend:0,qty:0,lines:0,discount:0}; per.set(l[L_PROD],r); }
+    r.spend+=l[L_NET]; r.qty+=l[L_QTY]; r.lines++; r.discount+=l[L_DISC];
+  }
+  return per;
+}
+
+function productTable(sc) {
+  const rows=[...productTotals(sc).values()].sort((a,b)=>(a[sortKey]-b[sortKey])*sortDir);
+  window.__prodCount = rows.length;
+  const head=[['name','Product',false],['spend','Uitgegeven',true],['qty','Aantal',true],
+              ['lines','Keer',true],['discount','Korting',true]];
+  let h='<table><thead><tr>'+head.map(([k,l,n])=>
+    `<th data-key="${k}" class="${n?'num':''}${sortKey===k?' sorted'+(sortDir>0?' asc':''):''}"`
+    + `${k==='name'?'':' tabindex="0" role="button" aria-sort="'+(sortKey===k?(sortDir>0?'ascending':'descending'):'none')+'"'}>${l}</th>`).join('')+'</tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td colspan="5" class="empty">Niets gevonden.</td></tr>';
+  for (const r of rows.slice(0,300)){
+    const p=D.products[r.pi];
+    h+=`<tr data-pi="${r.pi}" tabindex="0" class="${state.product===r.pi?'on':''}">`
+      +`<td>${esc(p[P_NAME])}${p[P_VAR]>1?` <span class="variant">${p[P_VAR]} schrijfwijzen</span>`:''}</td>`
+      +`<td class="num">${eur(r.spend)}</td><td class="num">${qtyText(r.pi, r.qty)}</td>`
+      +`<td class="num">${r.lines}</td><td class="num">${r.discount?eur(r.discount):'—'}</td></tr>`;
+  }
+  return h+'</tbody></table>';
+}
+
+function detailCard() {
+  if (state.product===null) return '';
+  const pi=state.product, p=D.products[pi];
+  const byVariant=priceSeries(l=>l[L_PROD]===pi);
+  const series=[...byVariant.entries()]
+    .map(([vi,arr])=>({vi,arr,spend:arr.reduce((a,e)=>a+e.spend,0)}))
+    .filter(s=>s.arr.length>=2).sort((a,b)=>b.spend-a.spend);
+  const shown=series.slice(0,4);
+  const charts = shown.length ? shown.map(s=>{
+      const pts=s.arr.map(e=>({v:Math.round(e.sum/e.n), x:D.months[e.m],
+        tip:mLabel(D.months[e.m])+' · '+eur(Math.round(e.sum/e.n))}));
+      const first=pts[0].v, last=pts[pts.length-1].v;
+      const pct=first?((last-first)/first*100):0;
+      return `<p class="hint" style="margin:12px 0 4px">${esc(variantLabel(s.vi))} ·
+        ${D.months[s.arr[0].m]} t/m ${D.months[s.arr[s.arr.length-1].m]} ·
+        <span class="${pct>0?'up':'down'}">${pct>0?'+':''}${f0.format(pct)}%</span></p>
+        <div class="scroll">${lineChart(pts,{label:'Prijsverloop '+variantLabel(s.vi)})}</div>`;
+    }).join('')
+  : '<p class="empty">Te weinig herhaalaankopen voor een prijsverloop.</p>';
+  const rest = series.length>4 ? `<p class="hint">${series.length-4} verdere variant(en) niet getoond.</p>` : '';
+  let spend=0,qty=0,lines=0;
+  for (let i=0;i<D.lines.length;i++){ const l=D.lines[i]; if(l[L_PROD]===pi){spend+=l[L_NET];qty+=l[L_QTY];lines++;} }
+  const nVar=[...byVariant.keys()].length;
+  return `<div class="card"><h2>${esc(p[P_NAME])}
+      <button type="button" data-close="product" title="Sluiten"
+        style="float:right;font-size:13px;padding:2px 8px">sluiten</button></h2>
+    <p class="hint">${esc(D.categories[p[P_CAT]])} · ${eur(spend)} over de hele periode · ${qtyText(pi, qty)} ·
+      ${lines} keer op een bon · ${p[P_VAR]} schrijfwijze(n), ${p[P_BC]} artikelnummer(s) ·
+      ${D.months[p[P_FIRST]]} t/m ${D.months[p[P_LAST]]}</p>
+    ${nVar>1?`<p class="hint">Het prijsverloop staat per artikelnummer apart. Eén naam dekt
+      vaak meerdere verpakkingen, en soms zelfs een andere eenheid, zoals broccoli die
+      eerst per stuk en later per kilo werd afgerekend. Die op één lijn zetten toont een
+      prijssprong die er niet is.</p>`:''}
+    ${charts}${rest}</div>`;
+}
+
+function receiptCard() {
+  if (state.receipt===null) return '';
+  const ri=state.receipt, r=D.receipts[ri];
+  const rows=[];
+  for (let i=0;i<D.lines.length;i++){ const l=D.lines[i]; if(l[L_RCPT]===ri) rows.push(l); }
+  const body=rows.map(l=>{
+    const p=D.products[l[L_PROD]];
+    return `<tr data-pi="${l[L_PROD]}"><td>${esc(p[P_NAME])}</td>`
+      +`<td class="muted">${esc(D.categories[p[P_CAT]])}</td>`
+      +`<td class="num">${qtyText(l[L_PROD], l[L_QTY])}</td>`
+      +`<td class="num">${l[L_UNIT]?eur(l[L_UNIT]):'—'}</td>`
+      +`<td class="num">${l[L_DISC]?'−'+eur(l[L_DISC]):''}</td>`
+      +`<td class="num">${eur(l[L_NET])}</td></tr>`;
+  }).join('');
+  return `<div class="card"><h2>Bon van ${r[R_DATE]}
+      <button type="button" data-close="receipt" title="Sluiten"
+        style="float:right;font-size:13px;padding:2px 8px">sluiten</button></h2>
+    <p class="hint">${DAGVOL[r[R_WDAY]]} ${String(r[R_HOUR]).padStart(2,'0')}:00 · ${esc(D.stores[r[R_STORE]])} ·
+      ${rows.length} regels · totaal ${eur(r[R_TOTAL])}</p>
+    <div class="tablebox"><table><thead><tr><th>Artikel</th><th>Categorie</th>
+      <th class="num">Aantal</th><th class="num">Stukprijs</th><th class="num">Korting</th>
+      <th class="num">Betaald</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+/* ---- tabs & render ---------------------------------------------------- */
+const TABS = [
+  ['overzicht','Overzicht',panelOverzicht],
+  ['tijd','Tijd',panelTijd],
+  ['categorie','Categorieën',panelCategorie],
+  ['seizoen','Seizoen',panelSeizoen],
+  ['producten','Producten',panelProducten],
+  ['prijzen','Prijzen',panelPrijzen],
+  ['korting','Kortingen',panelKorting],
+  ['mandje','Mandje',panelMandje],
+  ['bonnen','Bonnen',panelBonnen],
+];
+
+function renderKpis(sc) {
+  let spend=0, disc=0, dep=0;
+  for (const li of sc.lines) {
+    const l=D.lines[li];
+    if (isDep(li)) { dep+=l[L_NET]; continue; }
+    spend+=l[L_NET]; disc+=l[L_DISC];
+  }
+  const trips=sc.receipts.length;
+  const lines=sc.lines.filter(li=>!isDep(li)).length;
+  const second = sc.narrowed
+    ? ['Aankoopregels', num(lines), `over ${num(trips)} bonnen in deze periode`]
+    : ['Bonnen', num(trips), trips?eur(Math.round(spend/trips))+' gemiddeld':'—'];
+  document.getElementById('kpis').innerHTML=[
+    ['Uitgegeven',eur(spend), sc.narrowed?'binnen de selectie':'statiegeld eruit'],
+    second,
+    /* Bruto = netto + korting. Bij een selectie die per saldo geld opleverde
+       -- een retour zonder aankoop -- is die noemer nul of negatief en zegt
+       een percentage niets. */
+    ['Korting',eur(disc), (spend+disc)>0?f1.format(disc/(spend+disc)*100)+'% van bruto':'geen bruto om tegen af te zetten'],
+    ['Statiegeld',eur(dep), sc.narrowed?'binnen de selectie':'betaald minus retour'],
+  ].map(([l,v,n])=>`<div class="kpi"><p class="kpi-label">${esc(l)}</p>
+      <p class="kpi-value">${v}</p><p class="kpi-note">${esc(n)}</p></div>`).join('');
+}
+
+function render() {
+  writeHash();
+  const sc = scope();
+  renderKpis(sc);
+  document.getElementById('tabs').innerHTML = TABS.map(([k,l])=>
+    `<button role="tab" data-tab="${k}" aria-selected="${state.tab===k}">${l}</button>`).join('');
+  const tab = TABS.find(t=>t[0]===state.tab) || TABS[0];
+  document.getElementById('panel').innerHTML = tab[2](sc);
+  const hint=document.getElementById('prod-hint');
+  if (hint) {
+    /* Say which 300 are on screen. Claiming "de grootste" while sorted
+       ascending shows three hundred rows of nul and reads as a broken table. */
+    const welke = sortDir < 0 ? 'grootste' : 'kleinste';
+    const kolom = {spend:'bedrag', qty:'aantal', lines:'aantal keer', discount:'korting'}[sortKey] || 'bedrag';
+    hint.textContent = (window.__prodCount>300)
+      ? `${num(window.__prodCount)} producten, de 300 ${welke} naar ${kolom}. Klik een rij voor het prijsverloop.`
+      : `${num(window.__prodCount||0)} producten. Klik een rij voor het prijsverloop.`;
+  }
+  document.getElementById('period').textContent = D.months[0]+' t/m '+D.months[D.months.length-1];
+  if (focusHint) {
+    const el = document.querySelector('#panel '+focusHint);
+    if (el) el.focus();
+    focusHint = null;
+  }
+  const chips=[];
+  if (state.cat!=='all') chips.push(['cat',state.cat]);
+  if (state.store!=='all') chips.push(['store',state.store]);
+  if (state.q.trim()) chips.push(['q','“'+state.q.trim()+'”']);
+  document.getElementById('chips').innerHTML=chips.map(([k,v])=>
+    `<span class="chip">${esc(v)}<button type="button" data-clear="${k}" aria-label="Filter wissen">×</button></span>`).join(' ');
+}
+
+/* ---- url state -------------------------------------------------------- */
+function readHash(){
+  /* Reset first: a hash that omits a filter means "not set". Merging into the
+     current state instead left a filter on that the URL no longer mentions,
+     and writeHash then put it back. */
+  Object.assign(state,{period:'all',cat:'all',store:'all',q:'',tab:'overzicht',
+                       product:null,receipt:null});
+  const h=new URLSearchParams(location.hash.slice(1));
+  if(h.has('tab')&&TABS.some(t=>t[0]===h.get('tab'))) state.tab=h.get('tab');
+  if(h.has('jaar')) state.period=h.get('jaar');
+  if(h.has('cat')) state.cat=h.get('cat');
+  if(h.has('winkel')) state.store=h.get('winkel');
+  if(h.has('q')) state.q=h.get('q');
+  if(h.has('p')){ const i=D.products.findIndex(p=>p[P_NAME]===h.get('p')); state.product=i>=0?i:null; }
+  if(h.has('bon')){ const i=D.receipts.findIndex(r=>r[R_DATE]===h.get('bon')); state.receipt=i>=0?i:null; }
+}
+function writeHash(){
+  const h=new URLSearchParams();
+  if(state.tab!=='overzicht') h.set('tab',state.tab);
+  if(state.period!=='all') h.set('jaar',state.period);
+  if(state.cat!=='all') h.set('cat',state.cat);
+  if(state.store!=='all') h.set('winkel',state.store);
+  if(state.q.trim()) h.set('q',state.q.trim());
+  if(state.product!==null) h.set('p',D.products[state.product][P_NAME]);
+  if(state.receipt!==null) h.set('bon',D.receipts[state.receipt][R_DATE]);
+  const s=h.toString();
+  history.replaceState(null,'',location.pathname+location.search+(s?'#'+s:''));
+}
+
+/* ---- wiring ----------------------------------------------------------- */
+const $=id=>document.getElementById(id);
+$('f-period').innerHTML='<option value="all">Alle jaren</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+$('f-cat').innerHTML='<option value="all">Alle categorieën</option>'+D.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+$('f-store').innerHTML='<option value="all">Alle winkels</option>'+D.stores.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+$('f-period').addEventListener('change',e=>{state.period=e.target.value;render()});
+$('f-cat').addEventListener('change',e=>{state.cat=e.target.value;render()});
+$('f-store').addEventListener('change',e=>{state.store=e.target.value;render()});
+let qT; $('f-q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{state.q=e.target.value;render()},120)});
+$('reset').addEventListener('click',()=>{
+  Object.assign(state,{period:'all',cat:'all',store:'all',q:'',product:null,receipt:null});
+  $('f-period').value='all';$('f-cat').value='all';$('f-store').value='all';$('f-q').value='';render();
+});
+$('chips').addEventListener('click',e=>{
+  const w=e.target.dataset.clear; if(!w) return;
+  if(w==='cat'){state.cat='all';$('f-cat').value='all'}
+  if(w==='store'){state.store='all';$('f-store').value='all'}
+  if(w==='q'){state.q='';$('f-q').value=''}
+  render();
+});
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('[data-tab]'); if(!b) return;
+  state.tab=b.dataset.tab; render();
+});
+$('panel').addEventListener('click',e=>{
+  const close=e.target.closest('[data-close]');
+  if(close){ state[close.dataset.close]=null; render(); return; }
+  const th=e.target.closest('th[data-key]');
+  if(th){ const k=th.dataset.key; if(k==='name') return;
+    if(sortKey===k) sortDir*=-1; else {sortKey=k;sortDir=-1} render(); return; }
+  const cat=e.target.closest('[data-cat]');
+  if(cat){ const c=cat.dataset.cat; state.cat=state.cat===c?'all':c; $('f-cat').value=state.cat; render(); return; }
+  const tr=e.target.closest('tr[data-ri]');
+  if(tr){ const i=+tr.dataset.ri; state.receipt=state.receipt===i?null:i; render(); return; }
+  const pr=e.target.closest('[data-pi]');
+  if(pr){ const i=+pr.dataset.pi; state.product=state.product===i?null:i; render(); }
+});
+$('panel').addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  const el=e.target.closest('[data-cat],th[data-key],tr[data-pi],tr[data-ri]');
+  if(!el) return;
+  e.preventDefault();
+  /* Remember where focus was: re-rendering the panel throws it back to the
+     document and the keyboard user loses their place. */
+  focusHint = el.dataset.cat ? `[data-cat="${el.dataset.cat}"]`
+    : el.dataset.key ? `th[data-key="${el.dataset.key}"]`
+    : el.dataset.pi ? `tr[data-pi="${el.dataset.pi}"]`
+    : `tr[data-ri="${el.dataset.ri}"]`;
+  el.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+});
+let focusHint = null;
+$('theme').addEventListener('click',()=>{
+  /* Toggle against what is on screen. A three-way cycle through "volg het
+     systeem" does nothing visible on one of the three clicks, which reads as
+     a broken button. */
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+    || (!document.documentElement.hasAttribute('data-theme')
+        && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+});
+const tip=$('tip');
+document.addEventListener('mouseover',e=>{
+  const host=e.target.closest('[data-tip]');
+  if(!host){tip.style.opacity='0';return}
+  tip.textContent=host.dataset.tip; tip.style.opacity='1';
+  const b=host.getBoundingClientRect();
+  const x=Math.min(b.left+b.width/2, window.innerWidth-150);
+  tip.style.left=Math.max(8,x-tip.offsetWidth/2)+'px';
+  tip.style.top=Math.max(8,b.top-tip.offsetHeight-8)+'px';
+});
+addEventListener('hashchange',()=>{readHash();syncControls();render()});
+function syncControls(){
+  $('f-period').value=years.includes(state.period)?state.period:(state.period='all');
+  $('f-cat').value=D.categories.includes(state.cat)?state.cat:(state.cat='all');
+  $('f-store').value=D.stores.includes(state.store)?state.store:(state.store='all');
+  $('f-q').value=state.q;
+}
+readHash(); syncControls(); render();
+</script>
+</body>
+</html>

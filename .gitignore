@@ -1,0 +1,21 @@
+data/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+*.pyc
+.venv/
+config.json
+analysis/report.html
+analysis/spending.json
+analysis/report.pdf
+analysis/dashboard.html
+analysis/demo.html
+categories.csv
+
+# Bestanden die de README je zelf laat aanmaken in de repo-root. Zonder deze
+# regels staan ze untracked maar niet genegeerd, en is het één `git add -A`
+# tot ze publiek staan.
+laatste-bon.json
+items.csv
+*.bundle
